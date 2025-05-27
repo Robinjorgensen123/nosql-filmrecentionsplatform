@@ -108,37 +108,38 @@ export const deleteMovie = async (req, res) => {
 
 export const getMoviesWithRatings = async (req, res) => {
   try {
-    const ratings = await Review.aggregate([ // aggregate, 
+    const ratings = await Review.aggregate([ // aggregate - Bearbetar/beräknar/grupperar data direkt i databasen"
       {
-        $group: {
+        $group: { // Grupperar alla recensioner efter movieId, räknar ut snitt avg & total sum
           _id: "$movieId",
-          averageRating: { $avg: "$rating" },
-          numberOfReviews: { $sum: 1 },
+          averageRating: { $avg: "$rating" }, // räknar ut snittbetyg
+          numberOfReviews: { $sum: 1 }, // räknar antal recensioner
         },
       },
       {
-        $lookup: {
-          from: "movies",
-          localField: "_id",
-          foreignField: "_id",
-          as: "movie",
+        $lookup: { //"lookup" JOINAR in filmdata från movies kollektionen
+          from: "movies", // Hämta filmdata från Movie kollektionen
+          localField: "_id", // Matcha id från group (movieId)
+          foreignField: "_id", // jämför med filmens _id
+          as: "movie", //placerar resultatet i fältet "movie"
         },
       },
-      { $unwind: "$movie" },
+      { $unwind: "$movie" }, // vi får en array från lookup, gör om den till ett objekt i movie
       {
-        $project: {
-          _id: 0,
-          movieId: "$movieId._id",
-          title: "$movie.title",
-          genre: "$movie.genre",
-          averageRating: { $round: ["$averageRating", 1] },
+        $project: { // väljer vilka fält som ska visas
+          _id: 0, // dölj _id från group
+          movieId: "$movie._id", // visa filmens id
+          title: "$movie.title", // visa filmens tittel
+          genre: "$movie.genre", // visa filmens genre
+          averageRating: { $round: ["$averageRating", 1] }, // avrunda till 1 decimal
+          numberOfReviews: 1 // visa antal recensioner
         },
       },
     ]);
     res.status(200).json({
       success: true,
       message: "Filmer med genomsnittliga reviews hämtade",
-      ratings,
+      ratings, // går allt bra returneras ratings till klient
     });
   } catch (err) {
     console.error("fel i getMoviesWithRatings:", err.message);
