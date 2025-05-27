@@ -1,0 +1,151 @@
+import Movie from "../models/movieModel.js";
+import Review from "../models/reviewModel.js";
+
+export const createMovie = async (req, res) => {
+  const { title, director, releaseYear, genre } = req.body;
+
+  if (!title || !director || !releaseYear || !genre) {
+    return res.status(400).json({
+      message: "Alla fält måste fyllas i",
+      success: false,
+    });
+  }
+
+  try {
+    const movie = new Movie({ title, director, releaseYear, genre });
+    await movie.save();
+    return res.status(201).json({
+      message: "Film skapad",
+      success: true,
+      movie,
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({
+      message: "Kunde inte skapa film",
+      success: false,
+    });
+  }
+};
+
+export const getAllMovies = async (req, res) => {
+  try {
+    const movies = await Movie.find();
+    return res.status(200).json({
+      message: "Lyckades hämta alla filmer",
+      success: true,
+      movies,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      message: "Kunde inte hämta filmer",
+      success: false,
+    });
+  }
+};
+
+export const getMovieById = async (req, res) => {
+  try {
+    const movie = await Movie.findById(req.params.id);
+    if (!movie)
+      return res.status(404).json({
+        message: "Filmen hittades inte",
+        success: false,
+      });
+    return res.status(200).json({
+      message: "Filmen hämtades",
+      success: true,
+      movie,
+    });
+  } catch (err) {
+    return res
+      .status(500)
+      .json({ message: "Kunde inte hämta film", success: false });
+  }
+};
+
+export const updateMovie = async (req, res) => {
+  try {
+    const updated = await Movie.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+    });
+    if (!updated)
+      return res.status(404).json({
+        message: "Filmen hittades inte",
+        success: false,
+      });
+    return res.status(200).json({
+      message: "Film uppdaterad",
+      success: true,
+      movie: updated,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      message: "Kunde inte uppdatera filmen",
+      success: false,
+    });
+  }
+};
+
+export const deleteMovie = async (req, res) => {
+  try {
+    const deleted = await Movie.findByIdAndDelete(req.params.id);
+    if (!deleted)
+      return res.status(404).json({
+        message: "Filmen hittades inte",
+        success: false,
+      });
+    return res.status(200).json({
+      message: "Filmen borttagen",
+      success: true,
+    });
+  } catch (err) {
+    return res
+      .status(500)
+      .json({ message: "Kunde inte ta bort film", success: false });
+  }
+};
+
+export const getMoviesWithRatings = async (req, res) => {
+  try {
+    const ratings = await Review.aggregate([ // aggregate, 
+      {
+        $group: {
+          _id: "$movieId",
+          averageRating: { $avg: "$rating" },
+          numberOfReviews: { $sum: 1 },
+        },
+      },
+      {
+        $lookup: {
+          from: "movies",
+          localField: "_id",
+          foreignField: "_id",
+          as: "movie",
+        },
+      },
+      { $unwind: "$movie" },
+      {
+        $project: {
+          _id: 0,
+          movieId: "$movieId._id",
+          title: "$movie.title",
+          genre: "$movie.genre",
+          averageRating: { $round: ["$averageRating", 1] },
+        },
+      },
+    ]);
+    res.status(200).json({
+      success: true,
+      message: "Filmer med genomsnittliga reviews hämtade",
+      ratings,
+    });
+  } catch (err) {
+    console.error("fel i getMoviesWithRatings:", err.message);
+    res.status(500).json({
+      success: false,
+      message: "kunde inte hämta ratings",
+      details: err.message,
+    });
+  }
+};
