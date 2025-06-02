@@ -11,7 +11,7 @@ import {
 const router = express.Router();
 
 router.post("/", protect, createReview);
-router.get("/movie/:id", getReviewById);
+router.get("/:id", getReviewById);
 router.get("/", getAllReviews);
 router.put("/:id", protect, updateReview);
 router.delete("/:id", protect, deleteReview);

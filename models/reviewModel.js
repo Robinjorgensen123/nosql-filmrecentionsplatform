@@ -1,16 +1,16 @@
 import mongoose from "mongoose";
-
-//movie id och user id kopplas ihop med reviewRouten refererar till User och Movie
+//varje review "recension" kopplas till en specifik film & en specifik user
+//movie id och user id refererar till dokument i Movie samt User-schemas
 const reviewSchema = new mongoose.Schema(
   {
     movieId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Movie",
+      type: mongoose.Schema.Types.ObjectId, //film id
+      ref: "Movie", //refererar till Movie-Schemat
       required: true,
     },
     userId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      type: mongoose.Schema.Types.ObjectId, // user id
+      ref: "User", // refererar till user schemat
       required: true,
     },
     rating: {
@@ -21,7 +21,7 @@ const reviewSchema = new mongoose.Schema(
     },
     comment: {
       type: String,
-      trim: true,
+      trim: true, // tar bort mellanslag före och efter
     },
   },
   { timestamps: true }

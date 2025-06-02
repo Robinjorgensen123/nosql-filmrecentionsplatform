@@ -119,12 +119,12 @@ export const updateReview = async (req, res) => {
     if (rating !== undefined) review.rating = rating;
     if (comment !== undefined) review.comment = comment;
 
-    const updateReview = await review.save();
+    const updatedReview = await review.save();
 
     res.status(200).json({
       success: true,
       message: "Recension uppdaterad",
-      review: updateReview,
+      review: updatedReview,
     });
   } catch (err) {
     console.error("Fel i uppdateReview", err.message);
@@ -136,38 +136,38 @@ export const updateReview = async (req, res) => {
   }
 };
 
-export const deleteReview = async (req,res) => {
-    const reviewId = req.params.id
-    const userId = req.user.id
+export const deleteReview = async (req, res) => {
+  const reviewId = req.params.id;
+  const userId = req.user.id;  //  admin eller den user som skapat reviewen kan ta bort den kommer från auth.js
+  const userRole = req.user.role                              
+  try {
+    const review = await Review.findById(reviewId);
 
-    try {
-        const review = await Review.findById(reviewId)
-
-        if (!review) {
-            return res.status({
-                success: false,
-                message: "Recension hittades ej"
-            })
-        }
-
-        if (review.userId.toString() !== userId) {
-            return res.status(403).json({
-                success: false,
-                message:"Du har inte behörighet att ta bort denna recension"
-            })
-        }
-        await review.deleteOne()
-
-        res.status(200).json({
-            success: true,
-            message: "Recension borttagen"
-        })
-    } catch (err) {
-        console.error("Fel i deleteReview:", err.message)
-        res.status(500).json({
-            success: false,
-            message:"Kunde inte ta bort recension",
-            details: err.message
-        })
+    if (!review) {
+      return res.status(404).json({
+        success: false,
+        message: "Recension hittades ej",
+      });
     }
-}
+
+    if (review.userId.toString() !== userId && userRole !== "admin") {
+      return res.status(403).json({
+        success: false,
+        message: "Du har inte behörighet att ta bort denna recension",
+      });
+    }
+    await review.deleteOne();
+
+    res.status(200).json({
+      success: true,
+      message: "Recension borttagen",
+    });
+  } catch (err) {
+    console.error("Fel i deleteReview:", err.message);
+    res.status(500).json({
+      success: false,
+      message: "Kunde inte ta bort recension",
+      details: err.message,
+    });
+  }
+};
